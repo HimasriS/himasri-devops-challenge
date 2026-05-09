@@ -6,13 +6,16 @@ resource "kubernetes_namespace" "this" {
 
 resource "kubernetes_resource_quota" "memory" {
   metadata {
-    name      = "memory-quota"
+    name      = "resource-quota"
     namespace = kubernetes_namespace.this.metadata[0].name
   }
 
   spec {
     hard = {
       "limits.memory" = var.memory_quota
+      "requests.memory" = var.memory_quota
+      "requests.cpu"    = "500m"
+      "limits.cpu"      = "1000m"
     }
   }
 }
