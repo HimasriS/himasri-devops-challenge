@@ -12,7 +12,7 @@ resource "kubernetes_resource_quota" "memory" {
 
   spec {
     hard = {
-      "limits.memory" = var.memory_quota
+      "limits.memory"   = var.memory_quota
       "requests.memory" = var.memory_quota
       "requests.cpu"    = "500m"
       "limits.cpu"      = "1000m"

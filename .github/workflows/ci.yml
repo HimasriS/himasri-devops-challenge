@@ -11,7 +11,7 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - uses: actions/setup-python@v5
         with:
@@ -33,7 +33,7 @@ jobs:
   helm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - uses: azure/setup-helm@v4
 
@@ -57,9 +57,9 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3.1.2
 
       - name: Terraform format check
         run: terraform -chdir=terraform fmt -check
@@ -76,7 +76,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Set up QEMU (for multi-arch builds)
         uses: docker/setup-qemu-action@v3
@@ -120,7 +120,7 @@ jobs:
   kyverno:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - uses: azure/setup-helm@v4
 
