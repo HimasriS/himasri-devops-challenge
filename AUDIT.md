@@ -89,6 +89,12 @@ Categorised as Security, Reliability, Hygiene, or Documentation.
 - **Why it matters in production:** Two Docker builds on different days can produce images with different behaviour because a transitive dependency changed. This makes bugs impossible to reproduce.
 - **Fix:** Pin direct transitive dependencies explicitly (`werkzeug==2.3.7`). Ideally generate a full `pip freeze` lockfile.
 
+### R7 — /healthz does not check anything meaningful
+- **File:** `app/main.py`
+- **What's wrong:** The `/healthz` endpoint always returns 200 regardless of the actual state of the application. The original developer left a `# TODO: actually check something useful` comment acknowledging this.
+- **Why it matters in production:** Kubernetes uses the liveness and readiness probes to decide whether to send traffic to a pod and whether to restart it. If the probe endpoint always returns 200 even when the app is broken (e.g. cannot import a module, internal state is corrupt), Kubernetes will never restart the pod and will keep sending traffic to a broken instance.
+- **Fix:** Make /healthz check something real — at minimum, verify the Flask app can complete an internal request cycle.
+
 ---
 
 ## Hygiene
