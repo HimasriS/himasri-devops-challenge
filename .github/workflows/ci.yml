@@ -5,37 +5,134 @@ on:
   pull_request:
 
 jobs:
-  lint-and-build:
+  # -------------------------------------------------------
+  # Job 1: Python lint + tests
+  # -------------------------------------------------------
+  python:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
-      - name: Install flake8
-        run: pip install flake8
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt ruff pytest
 
-      - name: Lint Python
-        run: flake8 app/ --exclude=app/* --exit-zero
+      - name: Lint with ruff
+        # ruff replaces flake8 — faster, more rules, no --exit-zero escape hatch
+        run: ruff check app/
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
+      - name: Run tests
+        run: pytest app/tests/ -v
+
+  # -------------------------------------------------------
+  # Job 2: Helm lint + kubeconform
+  # -------------------------------------------------------
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
 
       - name: Helm lint
-        run: helm lint helm/skybyte-app || true
+        run: helm lint helm/skybyte-app/
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Install kubeconform
+        run: |
+          wget -q https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Render and validate manifests with kubeconform
+        run: |
+          helm template skybyte-app helm/skybyte-app/ | \
+          kubeconform -strict -summary
+
+  # -------------------------------------------------------
+  # Job 3: Terraform fmt + validate
+  # -------------------------------------------------------
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform format check
+        run: terraform -chdir=terraform fmt -check
 
       - name: Terraform validate
         run: |
           cd terraform
           terraform init -backend=false
-          terraform validate || true
+          TF_VAR_api_token="dummy-for-ci-validation" terraform validate
 
-      - name: Build Docker image
+  # -------------------------------------------------------
+  # Job 4: Docker build + Trivy security scan
+  # -------------------------------------------------------
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (for multi-arch builds)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build multi-arch image (amd64 + arm64)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          # Proves the image compiles on both architectures.
+          # Cannot load multi-arch images into local daemon — see next step.
+
+      - name: Build single-arch image for Trivy scanning
+        # Local Docker daemon only supports single architecture.
+        # Separate from the multi-arch build above by design.
         run: docker build -t skybyte/app:ci .
+
+      - name: Trivy filesystem scan (source code)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+      - name: Trivy image scan (built Docker image)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: image
+          image-ref: skybyte/app:ci
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+  # -------------------------------------------------------
+  # Job 5: Kyverno policy check against rendered manifests
+  # -------------------------------------------------------
+  kyverno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install Kyverno CLI
+        run: |
+          curl -LO https://github.com/kyverno/kyverno/releases/latest/download/kyverno-cli_linux_amd64.tar.gz
+          tar -xzf kyverno-cli_linux_amd64.tar.gz kyverno
+          sudo mv kyverno /usr/local/bin/
+          rm kyverno-cli_linux_amd64.tar.gz
+
+      - name: Render Helm templates
+        run: helm template skybyte-app helm/skybyte-app/ > /tmp/rendered-manifests.yaml
+
+      - name: Apply Kyverno policies against rendered manifests
+        run: kyverno apply policies/ --resource /tmp/rendered-manifests.yaml
