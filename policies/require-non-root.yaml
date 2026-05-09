@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+  annotations:
+    policies.kyverno.io/title: Require Non-Root Containers
+    policies.kyverno.io/description: >-
+      Containers must not run as root. This enforces runAsNonRoot: true
+      and a runAsUser > 0 in every pod's security context.
+      Catches the original defect where the starter Dockerfile ran as root.
+spec:
+  validationFailureAction: Enforce   # "Enforce" = reject. "Audit" = just warn.
+  background: true
+  rules:
+    - name: check-runAsNonRoot
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - devops-challenge
+      validate:
+        message: "Containers must not run as root. Set securityContext.runAsNonRoot: true and runAsUser > 0."
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - securityContext:
+                  allowPrivilegeEscalation: false
