@@ -99,7 +99,7 @@ jobs:
         run: docker build -t skybyte/app:ci .
 
       - name: Trivy filesystem scan (source code)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
           scan-ref: .
@@ -107,7 +107,7 @@ jobs:
           exit-code: '1'
 
       - name: Trivy image scan (built Docker image)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: image
           image-ref: skybyte/app:ci
