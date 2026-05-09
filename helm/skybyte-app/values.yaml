@@ -2,14 +2,24 @@ replicaCount: 1
 
 image:
   repository: skybyte/app
-  tag: latest
+  tag: "1.0.0" #Using a specific tag
   pullPolicy: IfNotPresent
 
 service:
   type: ClusterIP
-  port: 80
+  port: 8080
 
-# API token used by the service. Rotate quarterly.
-apiToken: "sk-skybyte-prod-7f3c9a2b1e8d4a6c"
+# apiToken removed from here, stored in a Kubernetes Secret named "api-token" (managed by Terraform).
 
 namespace: devops-challenge
+
+resources:
+  requests:
+    cpu: "50m"       # 5% of one CPU core
+    memory: "64Mi"   # 64 megabytes
+  limits:
+    cpu: "200m"      # 20% of one CPU core — cap it so one pod can't hog CPU
+    memory: "128Mi"
+
+# How long Kubernetes waits after sending SIGTERM before force-killing
+terminationGracePeriodSeconds: 30

@@ -16,23 +16,68 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "skybyte-app.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        # Prometheus scrape annotations — tells Prometheus to scrape this pod
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
     spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      # Security at the pod level
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           env:
             - name: API_TOKEN
-              value: {{ .Values.apiToken | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: api-token
+                  key: token
+          # Security at the container level
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          # Using /healthz not / — dedicated health endpoint
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          # /tmp needed for Python bytecode compilation with readOnlyRootFilesystem
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
