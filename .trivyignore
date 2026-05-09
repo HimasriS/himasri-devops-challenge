@@ -1,0 +1,28 @@
+# .trivyignore
+# OS-level CVEs in python:3.9-slim (debian 13.1) base image.
+# These are in system packages (openssl, glibc, ncurses, systemd, libcap)
+# with no available fix in the debian 13 package repository as of 2026-05-10.
+# Tracked for remediation — will update base image digest when debian patches land.
+# Re-evaluate when running: trivy image --severity HIGH,CRITICAL python:3.9-slim
+
+# glibc integer overflow
+CVE-2026-0861
+
+# libcap TOCTOU race condition (no fix available)
+CVE-2026-4878
+
+# ncurses buffer overflow (no fix available)
+CVE-2025-69720
+
+# openssl CVEs - fixed versions exist but not yet in debian 13 repo
+CVE-2025-15467
+CVE-2026-31789
+CVE-2025-69419
+CVE-2025-69421
+CVE-2026-28387
+CVE-2026-28388
+CVE-2026-28389
+CVE-2026-28390
+
+# systemd IPC vulnerability (no fix available)
+CVE-2026-29111

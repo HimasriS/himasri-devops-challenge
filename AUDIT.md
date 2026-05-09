@@ -59,6 +59,21 @@ Categorised as Security, Reliability, Hygiene, or Documentation.
   Discovered automatically by Trivy in CI — demonstrating why the scan step
   exists.
 
+  ### S9 — Base image contains OS-level CVEs with no upstream fix yet
+- **File:** `Dockerfile` (base image python:3.9-slim / debian 13.1)
+- **What's wrong:** Trivy image scan found 33 HIGH/CRITICAL CVEs in OS
+  packages (openssl, glibc, ncurses, libcap, systemd). Most have status
+  "affected" with no fixed version available in the debian 13 package
+  repository as of the scan date.
+- **Why it matters in production:** These are real vulnerabilities in the
+  container's OS layer. An attacker who can exploit them could escalate
+  privileges or execute code.
+- **Fix applied:** Unfixable OS CVEs documented in `.trivyignore` with
+  explanation. Python package CVEs (wheel, setuptools) fixed by upgrading
+  pip/setuptools/wheel in the Dockerfile. Base image digest will be updated
+  when debian patches land. In production this would be tracked in a
+  vulnerability management system with a remediation SLA.
+
 ---
 
 ## Reliability
