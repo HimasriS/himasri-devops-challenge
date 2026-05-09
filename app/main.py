@@ -24,6 +24,7 @@ REQUEST_DURATION = Histogram(
     ["method", "path"]
 )
 
+
 @app.before_request
 def start_timer():
     g.start_time = time.time()
