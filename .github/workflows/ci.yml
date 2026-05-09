@@ -126,10 +126,12 @@ jobs:
 
       - name: Install Kyverno CLI
         run: |
-          curl -LO https://github.com/kyverno/kyverno/releases/latest/download/kyverno-cli_linux_amd64.tar.gz
-          tar -xzf kyverno-cli_linux_amd64.tar.gz kyverno
-          sudo mv kyverno /usr/local/bin/
-          rm kyverno-cli_linux_amd64.tar.gz
+          KYVERNO_VERSION="v1.13.4"
+          curl -sL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_linux_amd64.tar.gz" -o kyverno-cli.tar.gz
+          tar -xzf kyverno-cli.tar.gz kyverno
+          sudo mv kyverno /usr/local/bin/kyverno
+          rm kyverno-cli.tar.gz
+          kyverno version
 
       - name: Render Helm templates
         run: helm template skybyte-app helm/skybyte-app/ > /tmp/rendered-manifests.yaml

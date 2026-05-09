@@ -49,6 +49,16 @@ Categorised as Security, Reliability, Hygiene, or Documentation.
 - **Why it matters in production:** Every tool present in a container is a tool an attacker can use after compromising it. The principle of least privilege applies to the filesystem too.
 - **Fix:** Switch to `python:3.9-slim` (~120MB). It includes only the Python runtime and pip, nothing else needed at runtime.
 
+### S8 — werkzeug 2.3.7 contains CVE-2024-34069 (HIGH)
+- **File:** `app/requirements.txt`
+- **What's wrong:** werkzeug 2.3.7 is vulnerable to CVE-2024-34069 — remote
+  code execution via the Werkzeug debugger. Severity: HIGH. Fixed in 3.0.3.
+- **Why it matters in production:** An attacker who can reach the debug
+  endpoint can execute arbitrary code on the server.
+- **Fix:** Upgrade werkzeug to 3.0.3 and flask to 3.0.3 for compatibility.
+  Discovered automatically by Trivy in CI — demonstrating why the scan step
+  exists.
+
 ---
 
 ## Reliability
