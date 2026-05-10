@@ -126,13 +126,9 @@ jobs:
 
       - name: Install Kyverno CLI
         run: |
-          gh release download v1.13.4 \
-            --repo kyverno/kyverno \
-            --pattern 'kyverno-cli_linux_amd64.tar.gz' \
-            --output kyverno-cli.tar.gz
-          tar -xzf kyverno-cli.tar.gz kyverno
-          sudo mv kyverno /usr/local/bin/kyverno
-          rm kyverno-cli.tar.gz
+          # Use the official Kyverno installer which handles asset naming automatically
+          curl -sL https://raw.githubusercontent.com/kyverno/kyverno/main/scripts/install-cli.sh | \
+            KYVERNO_VERSION=v1.13.4 bash
           kyverno version
         env:
           GH_TOKEN: ${{ github.token }}

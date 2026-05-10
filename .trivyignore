@@ -26,3 +26,12 @@ CVE-2026-28390
 
 # systemd IPC vulnerability (no fix available)
 CVE-2026-29111
+
+# setuptools vendored dependency CVEs.
+# jaraco.context and wheel are bundled INSIDE setuptools' own vendor directory
+# for setuptools' internal use only — they are not accessible to application code.
+# The standalone wheel package has been upgraded to 0.46.2 (clean).
+# These vendored copies can only be fixed by a setuptools release that updates
+# its internal vendor bundle — not by upgrading the packages themselves.
+CVE-2026-23949
+CVE-2026-24049
