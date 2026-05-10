@@ -126,9 +126,24 @@ jobs:
 
       - name: Install Kyverno CLI
         run: |
-          # Use the official Kyverno installer which handles asset naming automatically
-          curl -sL https://raw.githubusercontent.com/kyverno/kyverno/main/scripts/install-cli.sh | \
-            KYVERNO_VERSION=v1.13.4 bash
+          # Get the exact download URL from the GitHub API — avoids filename guessing
+          ASSET_URL=$(gh release view v1.13.4 \
+            --repo kyverno/kyverno \
+            --json assets \
+            --jq '.assets[] | select(.name | contains("kyverno") and contains("linux") and contains("amd64") and (contains("tar.gz") or contains("zip"))) | .url' \
+            | head -1)
+          echo "Downloading from: $ASSET_URL"
+          curl -sL "$ASSET_URL" -o kyverno-asset
+          # Handle both tar.gz and zip
+          file kyverno-asset
+          if file kyverno-asset | grep -q gzip; then
+            tar -xzf kyverno-asset
+          else
+            unzip kyverno-asset
+          fi
+          find . -maxdepth 2 -name 'kyverno' -type f | head -1 | xargs -I{} sudo mv {} /usr/local/bin/kyverno
+          sudo chmod +x /usr/local/bin/kyverno
+          rm -f kyverno-asset
           kyverno version
         env:
           GH_TOKEN: ${{ github.token }}
